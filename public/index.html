@@ -62,7 +62,7 @@
 <div class="container">
     <div class="row">
         <div class="col-md-6 activity" v-for="activity in activities">
-          <h2>{{ activity.name }}
+          <h2 class="activityName">{{ activity.name }}
             <i class="fa"
               v-bind:class="{ 'fa-close': activity.users.length >= activity.maxUsers && !userJoined(activity), 'fa-check': activity.users.length >= activity.minUsers}">
             </i>
