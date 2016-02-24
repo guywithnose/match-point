@@ -15,6 +15,7 @@ var (
     gcmSenderId = os.Getenv("MATCH_POINT_GCM_ID")
     gcmSenderSecret = os.Getenv("MATCH_POINT_GCM_SECRET")
     AuthKey = os.Getenv("MATCH_POINT_RETHINKDB_AUTH")
+    databaseAddress = os.Getenv("MATCH_POINT_RETHINKDB_ADDRESS")
     databaseName = os.Getenv("MATCH_POINT_DATABASE")
     session *r.Session = getRethinkDbSession()
     activitiesTable = r.DB(databaseName).Table("activities")
@@ -202,7 +203,7 @@ func getRethinkDbSession() *r.Session {
     var session *r.Session
 
     session, err := r.Connect(r.ConnectOpts{
-        Address: "localhost:28015",
+        Address: databaseAddress,
         AuthKey: AuthKey,
     })
     if err != nil {
