@@ -19,6 +19,7 @@ var (
     AuthKey = os.Getenv("MATCH_POINT_RETHINKDB_AUTH")
     databaseAddress = os.Getenv("MATCH_POINT_RETHINKDB_ADDRESS")
     databaseName = os.Getenv("MATCH_POINT_DATABASE")
+    port = os.Getenv("PORT")
     session *r.Session = getRethinkDbSession()
     activitiesTable = r.DB(databaseName).Table("activities")
     usersTable = r.DB(databaseName).Table("users")
@@ -100,7 +101,10 @@ func main() {
     r.HandleFunc("/notification", getNotificationData)
     r.PathPrefix("/").Handler(http.FileServer(http.Dir("./public/")))
     http.Handle("/", r)
-    http.ListenAndServe("127.0.0.1:3000", nil)
+    if port == "" {
+        port = "3000"
+    }
+    http.ListenAndServe("127.0.0.1:" + port, nil)
 }
 
 func buildManifest(w http.ResponseWriter, r *http.Request) {
