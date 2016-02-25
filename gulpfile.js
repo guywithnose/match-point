@@ -32,7 +32,7 @@ gulp.task('css', ['bower'], function() {
     .pipe(gulp.dest(dest + 'css'));
 });
 
-gulp.task('fonts', function() {
+gulp.task('fonts', ['bower'], function() {
   var fontFiles = [
     'bower_components/bootstrap/fonts/*',
     'bower_components/font-awesome/fonts/*'
