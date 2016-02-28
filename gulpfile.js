@@ -1,5 +1,7 @@
 "use strict"
 var gulp = require('gulp'),
+fs = require('fs'),
+spawn = require('child_process').spawn,
 plugins = require("gulp-load-plugins")({
   pattern: ['gulp-*', 'main-bower-files'],
   replaceString: /\bgulp[\-.]/
@@ -42,7 +44,8 @@ gulp.task('fonts', ['bower'], function() {
 });
 
 gulp.task("go-run", function() {
-  go = plugins.go.run("src/main.go", ["src/socket.go"], {cwd: __dirname, stdio: 'inherit'});
+  var goFiles = getGoFiles();
+  go = plugins.go.run(goFiles[0], goFiles.slice(1), {cwd: __dirname, stdio: 'inherit'});
 });
 
 gulp.task('dev', ['go-run'], function() {
@@ -53,4 +56,32 @@ gulp.task('dev', ['go-run'], function() {
   });;
 });
 
+gulp.task('build', function(done) {
+  var args = getGoFiles();
+  args.unshift('matchPoint');
+  args.unshift('-o');
+  args.unshift('build');
+  return spawn('go', args, {stdio: 'inherit'})
+    .on('close', function(code) {
+      if (code != 0) {
+        throw 'Unable to build'
+      } else {
+        done();
+      }
+    });
+});
+
+function getGoFiles() {
+  var goFiles = [];
+  var files = fs.readdirSync('./src');
+  for (var i in files) {
+    if (files[i].match(/\.go$/)) {
+      goFiles.push('./src/' + files[i]);
+    }
+  }
+
+  return goFiles;
+}
+
 gulp.task('default', ['js', 'css', 'fonts']);
+gulp.task('production', ['js', 'css', 'fonts', 'build']);
