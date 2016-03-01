@@ -67,7 +67,7 @@ func handleMessages(ws *websocket.Conn, sender chan<- *Message, closed chan bool
     }
 
     log.Println("Connection Closed")
-    closed <- true
+    close(closed)
 }
 
 func handleOutput(ws *websocket.Conn, sender <-chan *Message, closed <-chan bool) {

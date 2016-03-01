@@ -2,6 +2,12 @@ package main
 
 import (
     "log"
+    "time"
+)
+
+var (
+    inactivityExpires = 15 * time.Minute
+    activeGameExpires = 1 * time.Hour
 )
 
 type Activity struct {
@@ -12,6 +18,8 @@ type Activity struct {
     NumUsers int `json:"numUsers"`
     Active bool `json:"active"`
     Initiator User `json:"initiator"`
+    Created int64 `json:"created"`
+    Expires int64 `json:"expires"`
 }
 
 type ActivityChangeResponse struct {
@@ -46,6 +54,12 @@ func removeUserFromActivity(activityId string, user User) {
       a.Initiator = a.Users[0]
     }
 
+    if len(a.Users) == 0 {
+        a.Expires = 0;
+    } else {
+        a.Expires = time.Now().Add(inactivityExpires).Unix();
+    }
+
     res, err := activitiesTable.Get(activityId).Update(a).Run(session)
     defer res.Close()
     if err != nil {
@@ -76,20 +90,25 @@ func unsubscribeUser(activityId string, user User) {
 func resetActivity(activityId string, user User, sender chan<- *Message) {
     var a Activity = getActivity(activityId)
     if a.Initiator.Name == user.Name || user.IsAdmin {
-        a.Users = make([]User, 0)
-        a.Initiator.Name = "notauser"
-        res, err := activitiesTable.Get(activityId).Update(a).Run(session)
-        defer res.Close()
-        if err != nil {
-            log.Println(err.Error())
-            return
-        }
+        handleReset(activityId);
     } else {
         var m Message
         m.Action = "error"
         m.ErrorMessage = "You are not authorized to perform this action."
 
         sender <- &m
+    }
+}
+
+func handleReset(activityId string) {
+    var a Activity = getActivity(activityId)
+    a.Users = make([]User, 0)
+    a.Initiator.Name = "notauser"
+    res, err := activitiesTable.Get(activityId).Update(a).Run(session)
+    defer res.Close()
+    if err != nil {
+        log.Println(err.Error())
+        return
     }
 }
 
@@ -106,12 +125,16 @@ func appendUser(id string, user User) {
     }
     a.Users = append(a.Users, user)
     if len(a.Users) == 1 {
+      a.Created = time.Now().Unix();
       a.Initiator = a.Users[0]
       notifySubscribers(a.Subscribers, user.Name + " wants you to come play " + a.Name, user.Name)
     }
 
+    a.Expires = time.Now().Add(inactivityExpires).Unix();
+
     if len(a.Users) == a.NumUsers {
       notifySubscribers(a.Subscribers, a.Name + " is now full", user.Name)
+      a.Expires = time.Now().Add(activeGameExpires).Unix();
     }
 
     res, err := activitiesTable.Get(id).Update(a).Run(session)
@@ -170,7 +193,7 @@ func initializeActivities(sender chan<- *Message) {
     sender <- &m
 }
 
-func listenForChanges(sender chan<- *Message, done <-chan bool) {
+func listenForChanges() {
     var m Message
     m.Action = "update-activity"
     res, err := activitiesTable.Changes().Run(session)
@@ -180,15 +203,13 @@ func listenForChanges(sender chan<- *Message, done <-chan bool) {
         return
     }
     var row ActivityChangeResponse
-    go func() {
-        for res.Next(&row) {
-            m.NewActivity = row.NewValue
-            m.OldActivity = row.OldValue
+    for res.Next(&row) {
+        m.NewActivity = row.NewValue
+        m.OldActivity = row.OldValue
+        for _, sender := range(openSockets) {
             sender <- &m
         }
-    }()
 
-    <-done
-
-    res.Close()
+        updateExpiration <- row.NewValue
+    }
 }

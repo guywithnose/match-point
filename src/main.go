@@ -11,6 +11,7 @@ var (
     session *r.Session = getRethinkDbSession()
     activitiesTable = r.DB(databaseName).Table("activities")
     usersTable = r.DB(databaseName).Table("users")
+    openSockets []chan<- *Message = make([]chan<- *Message, 0)
 )
 
 type Message struct {
@@ -33,6 +34,10 @@ func main() {
     if port == "" {
         port = "3000"
     }
+
+    handleExpirations();
+    go listenForChanges()
+
     http.ListenAndServe("127.0.0.1:" + port, nil)
 }
 
@@ -54,7 +59,7 @@ func handleMessage(msg *Message, sender chan<- *Message, done <-chan bool) {
     switch msg.Action {
     case "subscribe-all-activities":
         go initializeActivities(sender)
-        go listenForChanges(sender, done)
+        go subscribeSocket(sender, done)
     case "add-activity":
         if verifyAdmin(msg.User, sender) {
             res, err := activitiesTable.Insert(msg.NewActivity).Run(session)
@@ -106,6 +111,18 @@ func handleMessage(msg *Message, sender chan<- *Message, done <-chan bool) {
         if valid, isAdmin := authenticateUser(msg.User); valid {
             msg.User.IsAdmin = isAdmin
             setNumUsers(msg.Activity, msg.User)
+        }
+    }
+}
+
+func subscribeSocket(sender chan<- *Message, done <-chan bool) {
+    openSockets = append(openSockets, sender);
+    <-done
+
+    for index, s := range(openSockets) {
+        if s == sender {
+            openSockets[index] = openSockets[len(openSockets) - 1]
+            openSockets = openSockets[:len(openSockets) - 1]
         }
     }
 }

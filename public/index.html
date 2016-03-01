@@ -58,6 +58,7 @@
               v-bind:class="{ 'fa-close': activity.users.length >= activity.numUsers && !userJoined(activity), 'fa-check': activity.users.length >= activity.numUsers}">
             </i>
           </h2>
+          <div v-if="activity.timeLeft">Created @ {{ formatDate(activity.created) }}, match request expires in {{ activity.timeLeft }}</div>
           <div v-if="isLoggedIn">
             <a v-if="isAdmin" class="btn btn-default deleteActivity" role="button" v-on:click="deleteActivity(activity.id)">
               <span class="fa-stack">

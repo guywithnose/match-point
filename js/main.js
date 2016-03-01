@@ -25,7 +25,8 @@ function MatchVm() {
         modes: [
           {name: '1v1', numUsers: 2},
           {name: '2v2', numUsers: 4}
-        ]
+        ],
+        timer: null
       };
     },
     methods: {
@@ -57,6 +58,24 @@ function MatchVm() {
           }
         });
         this.showAddActivityForm = false;
+      },
+      updateTimeLeft: function() {
+        for (var i in this.activities) {
+          var now = parseInt((new Date()).getTime() / 1000);
+          var secondsLeft = this.activities[i].expires - now;
+          if (secondsLeft > 0) {
+            var minutes = Math.floor(secondsLeft / 60);
+            var seconds = secondsLeft % 60;
+            if (seconds < 10) {
+              seconds = '0' + seconds;
+            }
+
+            Vue.set(this.activities[i], 'timeLeft', minutes + ":" + seconds);
+            return;
+          }
+
+          Vue.set(this.activities[i], 'timeLeft', null);
+        }
       },
       deleteActivity: function (id) {
         this.sendJSON({action: 'delete-activity', activity: {id: id}});
@@ -144,6 +163,11 @@ function MatchVm() {
       },
       selectMode: function(activityId, numUsers) {
         this.sendJSON({action: 'set-numusers', activity: {id: activityId, numUsers: numUsers}});
+      },
+      formatDate: function(date) {
+        var d = new Date(date * 1000);
+        var hours = d.getHours();
+        return (((hours - 1) % 12) + 1) + ":" + d.getMinutes() + (hours > 12 ? 'PM' : 'AM');
       }
     }
   });
@@ -206,6 +230,10 @@ function MatchVm() {
         }
       }
     }
+  }
+
+  if (vue.timer === null) {
+    vue.timer = setInterval(vue.updateTimeLeft, 1000);
   }
 
   initSocket();
