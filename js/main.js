@@ -230,6 +230,8 @@ function MatchVm() {
         }
       }
     }
+
+    vue.updateTimeLeft();
   }
 
   if (vue.timer === null) {
