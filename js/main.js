@@ -13,8 +13,6 @@ function MatchVm() {
       return {
         activities: [],
         newActivityName: '',
-        newActivityMinUsers: 2,
-        newActivityMaxUsers: 4,
         showAddActivityForm: false,
         isLoggedIn: false,
         userName: '',
@@ -23,7 +21,11 @@ function MatchVm() {
         loginError: '',
         confirmPassword: '',
         isAdmin: false,
-        newUser: false
+        newUser: false,
+        modes: [
+          {name: '1v1', numUsers: 2},
+          {name: '2v2', numUsers: 4}
+        ]
       };
     },
     methods: {
@@ -50,24 +52,23 @@ function MatchVm() {
           action: 'add-activity',
           newActivity: {
             name: this.newActivityName,
-            users: [],
-            minUsers: this.newActivityMinUsers,
-            maxUsers: this.newActivityMaxUsers
+            numUsers: 2,
+            users: []
           }
         });
         this.showAddActivityForm = false;
       },
       deleteActivity: function (id) {
-        this.sendJSON({action: 'delete-activity', id: id});
+        this.sendJSON({action: 'delete-activity', activity: {id: id}});
       },
       joinActivity: function (id) {
-        this.sendJSON({action: 'join-activity', id: id});
+        this.sendJSON({action: 'join-activity', activity: {id: id}});
       },
       resetActivity: function (id) {
-        this.sendJSON({action: 'reset-activity', id: id});
+        this.sendJSON({action: 'reset-activity', activity: {id: id}});
       },
       leaveActivity: function (id) {
-        this.sendJSON({action: 'leave-activity', id: id});
+        this.sendJSON({action: 'leave-activity', activity: {id: id}});
       },
       subscribeActivity: function (id) {
         if ('serviceWorker' in navigator) {
@@ -80,10 +81,10 @@ function MatchVm() {
           });
         }
 
-        this.sendJSON({action: 'subscribe-activity', id: id});
+        this.sendJSON({action: 'subscribe-activity', activity: {id: id}});
       },
       unsubscribeActivity: function (id) {
-        this.sendJSON({action: 'unsubscribe-activity', id: id});
+        this.sendJSON({action: 'unsubscribe-activity', activity: {id: id}});
       },
       showLoginForm: function() {
         loginModal.modal('show');
@@ -140,6 +141,9 @@ function MatchVm() {
         }
 
         socket.send(JSON.stringify(message));
+      },
+      selectMode: function(activityId, numUsers) {
+        this.sendJSON({action: 'set-numusers', activity: {id: activityId, numUsers: numUsers}});
       }
     }
   });

@@ -9,8 +9,7 @@ type Activity struct {
     Name string `json:"name"`
     Users []User `json:"users"`
     Subscribers []string `json:"subscribers"`
-    MinUsers int `json:"minUsers"`
-    MaxUsers int `json:"maxUsers"`
+    NumUsers int `json:"numUsers"`
     Active bool `json:"active"`
     Initiator User `json:"initiator"`
 }
@@ -96,7 +95,7 @@ func resetActivity(activityId string, user User, sender chan<- *Message) {
 
 func appendUser(id string, user User) {
     var a Activity = getActivity(id)
-    if len(a.Users) >= a.MaxUsers {
+    if len(a.Users) >= a.NumUsers {
         return
     }
 
@@ -111,7 +110,7 @@ func appendUser(id string, user User) {
       notifySubscribers(a.Subscribers, user.Name + " wants you to come play " + a.Name, user.Name)
     }
 
-    if len(a.Users) == a.MaxUsers {
+    if len(a.Users) == a.NumUsers {
       notifySubscribers(a.Subscribers, a.Name + " is now full", user.Name)
     }
 
@@ -135,6 +134,21 @@ func subscribeUser(id string, user User) {
     a.Subscribers = append(a.Subscribers, user.Name)
 
     res, err := activitiesTable.Get(id).Update(a).Run(session)
+    defer res.Close()
+    if err != nil {
+        log.Println(err.Error())
+        return
+    }
+}
+
+func setNumUsers(activity Activity, user User) {
+    var a Activity = getActivity(activity.Id)
+    if a.Initiator.Name != user.Name && user.IsAdmin == false && activity.NumUsers >= len(activity.Users) {
+        return
+    }
+
+    a.NumUsers = activity.NumUsers
+    res, err := activitiesTable.Get(activity.Id).Update(a).Run(session)
     defer res.Close()
     if err != nil {
         log.Println(err.Error())

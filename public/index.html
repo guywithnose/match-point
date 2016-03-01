@@ -41,12 +41,6 @@
       <div class="row">
         <div class="col-xs-10">
           <input v-model='newActivityName' class="form-control" type="text" />
-          <select v-model="newActivityMinUsers">
-            <option v-for="n in 49" v-bind:value="n + 2">{{ n + 2 }}</option>
-          </select>
-          <select v-model="newActivityMaxUsers">
-            <option v-for="n in 49" v-bind:value="n + 2">{{ n + 2 }}</option>
-          </select>
         </div>
         <div class="col-xs-2">
           <a class="btn btn-default" role="button" v-on:click="showAddActivityForm = false">Cancel</a>
@@ -61,7 +55,7 @@
         <div class="col-md-6 activity" v-for="activity in activities">
           <h2 class="activityName">{{ activity.name }}
             <i class="fa"
-              v-bind:class="{ 'fa-close': activity.users.length >= activity.maxUsers && !userJoined(activity), 'fa-check': activity.users.length >= activity.minUsers}">
+              v-bind:class="{ 'fa-close': activity.users.length >= activity.numUsers && !userJoined(activity), 'fa-check': activity.users.length >= activity.numUsers}">
             </i>
           </h2>
           <div v-if="isLoggedIn">
@@ -72,7 +66,7 @@
               Delete
             </a>
             <a class="btn btn-default" role="button"
-              v-if="!userJoined(activity) && activity.users.length < activity.maxUsers" v-on:click="joinActivity(activity.id)">
+              v-if="!userJoined(activity) && activity.users.length < activity.numUsers" v-on:click="joinActivity(activity.id)">
               <span class="fa-stack">
                 <i class="fa fa-user-plus"></i>
               </span>
@@ -102,6 +96,12 @@
               </span>
               Reset
             </a>
+          </div>
+          <div v-for="mode in modes">
+            <div>
+              <input type="radio" name="mode" v-on:click="selectMode(activity.id, mode.numUsers)" v-model="activity.numUsers" value="{{ mode.numUsers }}" v-bind:disabled="(activity.initiator.name != userName && !isAdmin) || mode.numUsers < activity.users.length" />
+              <label>{{ mode.name }}</label>
+            </div>
           </div>
           <ul>
             <li v-for="user in activity.users">{{ user.name }}</li>

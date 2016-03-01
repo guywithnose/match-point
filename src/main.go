@@ -15,10 +15,10 @@ var (
 
 type Message struct {
     Action string `json:"action"`
+    Activity Activity `json:"activity"`
     Activities []Activity `json:"activities"`
     NewActivity Activity `json:"newActivity"`
     OldActivity Activity `json:"oldActivity"`
-    Id string `json:"id"`
     User User `json:"user"`
     ErrorMessage string `json:"errorMessage"`
 }
@@ -65,7 +65,7 @@ func handleMessage(msg *Message, sender chan<- *Message, done <-chan bool) {
         }
     case "delete-activity":
         if verifyAdmin(msg.User, sender) {
-            res, err := activitiesTable.Get(msg.Id).Delete().Run(session)
+            res, err := activitiesTable.Get(msg.Activity.Id).Delete().Run(session)
             defer res.Close()
             if err != nil {
                 log.Println(err.Error())
@@ -73,24 +73,24 @@ func handleMessage(msg *Message, sender chan<- *Message, done <-chan bool) {
         }
     case "join-activity":
         if verifyAuth(msg.User, sender) {
-            appendUser(msg.Id, msg.User)
+            appendUser(msg.Activity.Id, msg.User)
         }
     case "leave-activity":
         if verifyAuth(msg.User, sender) {
-            removeUserFromActivity(msg.Id, msg.User)
+            removeUserFromActivity(msg.Activity.Id, msg.User)
         }
     case "subscribe-activity":
         if verifyAuth(msg.User, sender) {
-            subscribeUser(msg.Id, msg.User)
+            subscribeUser(msg.Activity.Id, msg.User)
         }
     case "unsubscribe-activity":
         if verifyAuth(msg.User, sender) {
-            unsubscribeUser(msg.Id, msg.User)
+            unsubscribeUser(msg.Activity.Id, msg.User)
         }
     case "reset-activity":
         if valid, isAdmin := authenticateUser(msg.User); valid {
             msg.User.IsAdmin = isAdmin
-            resetActivity(msg.Id, msg.User, sender)
+            resetActivity(msg.Activity.Id, msg.User, sender)
         }
     case "getSalt":
         getSalt(sender, msg.User)
@@ -101,6 +101,11 @@ func handleMessage(msg *Message, sender chan<- *Message, done <-chan bool) {
     case "add-notify-id":
         if verifyAuth(msg.User, sender) {
             addNotifyId(msg.User)
+        }
+    case "set-numusers":
+        if valid, isAdmin := authenticateUser(msg.User); valid {
+            msg.User.IsAdmin = isAdmin
+            setNumUsers(msg.Activity, msg.User)
         }
     }
 }
