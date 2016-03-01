@@ -98,7 +98,7 @@
               Reset
             </a>
           </div>
-          <div v-for="mode in modes">
+          <div v-if="activity.users.length > 0" v-for="mode in modes">
             <div>
               <input type="radio" name="mode" v-on:click="selectMode(activity.id, mode.numUsers)" v-model="activity.numUsers" value="{{ mode.numUsers }}" v-bind:disabled="(activity.initiator.name != userName && !isAdmin) || mode.numUsers < activity.users.length" />
               <label>{{ mode.name }}</label>
