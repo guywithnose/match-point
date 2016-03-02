@@ -226,6 +226,7 @@ function MatchVm() {
       for (var i in vue.activities) {
         if (vue.activities[i].id === message.newActivity.id) {
           vue.activities.$set(i, message.newActivity);
+          $('title').text('Match Point - ' + message.newActivity.name + ' Updated');
           break;
         }
       }
