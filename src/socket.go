@@ -71,12 +71,12 @@ func handleMessages(ws *websocket.Conn, sender chan<- *Message, closed chan bool
 }
 
 func handleOutput(ws *websocket.Conn, sender <-chan *Message, closed <-chan bool) {
-    for {
+    output: for {
         select {
         case msg := <-sender:
             ws.WriteJSON(msg)
         case <-closed:
-            break;
+            break output;
         }
     }
 }
